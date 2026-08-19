@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavRouting();
   initNavScroll();
   initNavPill();
+  initContactForm();
 });
 
 /* ---------- Decrypt / scramble headline ---------- */
@@ -166,7 +167,7 @@ function initCodeAnimation() {
 
 /* ---------- Page router (home / about / services) ---------- */
 
-const PAGE_NAMES = ['home', 'about', 'services'];
+const PAGE_NAMES = ['home', 'about', 'services', 'contact'];
 
 function showPage(name) {
   if (!PAGE_NAMES.includes(name)) {
@@ -185,6 +186,10 @@ function showPage(name) {
 
   if (name === 'services') {
     revealPage('page-services');
+  }
+
+  if (name === 'contact') {
+    revealPage('page-contact');
   }
 
   closeNavDropdown();
@@ -254,4 +259,27 @@ function closeNavDropdown() {
   if (dropdown) {
     dropdown.classList.remove('open');
   }
+}
+
+/* ---------- Contact form ---------- */
+
+function initContactForm() {
+  const form = document.getElementById('contact-form');
+  const success = document.getElementById('contact-success');
+  if (!form || !success) return;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    form.hidden = true;
+    success.hidden = false;
+    success.classList.remove('is-visible');
+    void success.offsetWidth; // force reflow so the transition re-triggers
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        success.classList.add('is-visible');
+      });
+    });
+  });
 }

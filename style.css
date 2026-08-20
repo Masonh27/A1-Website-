@@ -487,13 +487,9 @@ body.nav-scrolled .nav-pill {
 
 /* ---------- INTEGRATION SCROLL REVEAL ---------- */
 
-.integration {
-  position: relative;
-}
-
 .integration-scroll-wrap {
   position: relative;
-  height: 220vh;
+  min-height: 250vh;
 }
 
 .integration-scroll-inner {
@@ -523,7 +519,8 @@ body.nav-scrolled .nav-pill {
 .scrub-word {
   display: inline-block;
   margin: 0 0.18em;
-  will-change: transform;
+  opacity: 0;
+  will-change: transform, opacity;
 }
 
 .integration-subtext {
@@ -555,7 +552,8 @@ body.nav-scrolled .nav-pill {
   border-radius: 50%;
   background: rgba(28,22,18,0.92);
   border: 1px solid rgba(255,255,255,0.12);
-  will-change: transform;
+  opacity: 0;
+  will-change: transform, opacity;
 }
 
 .integration-icon-item img {
@@ -1445,7 +1443,7 @@ body.nav-scrolled .nav-pill {
   }
 
   .integration-scroll-wrap {
-    height: 180vh;
+    min-height: 200vh;
   }
 
   .integration-icon-row {

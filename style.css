@@ -485,156 +485,83 @@ body.nav-scrolled .nav-pill {
   display: none;
 }
 
-/* ---------- INTEGRATION ORBIT ---------- */
+/* ---------- INTEGRATION SCROLL REVEAL ---------- */
 
 .integration {
-  padding: 140px 0;
+  position: relative;
 }
 
-.integration-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
+.integration-scroll-wrap {
+  position: relative;
+  height: 220vh;
+}
+
+.integration-scroll-inner {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 24px;
+  text-align: center;
 }
 
-.integration-headline {
-  font-family: Georgia, serif;
-  font-size: clamp(2rem, 3.5vw, 2.8rem);
-  color: var(--accent);
-  font-weight: normal;
+.integration-headline-scrub {
   margin-top: 16px;
+  max-width: 900px;
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 4.5vw, 3.2rem);
+  font-weight: normal;
+  line-height: 1.3;
+  color: var(--accent);
+  perspective: 500px;
+}
+
+.scrub-word {
+  display: inline-block;
+  margin: 0 0.18em;
+  will-change: transform;
 }
 
 .integration-subtext {
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 1rem;
   color: var(--accent-dim);
-  margin-top: 16px;
-  line-height: 1.75;
-  max-width: 420px;
-}
-
-.integration-list {
-  list-style: none;
   margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  line-height: 1.75;
+  max-width: 480px;
 }
 
-.integration-list li {
+.integration-icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 40px;
+  max-width: 700px;
+}
+
+.integration-icon-item {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.875rem;
-  color: var(--accent-dim);
-}
-
-.integration-dot {
-  width: 6px;
-  height: 6px;
-  min-width: 6px;
-  border-radius: 50%;
-  background: var(--accent-glow);
-}
-
-.integration-visual {
-  display: flex;
   justify-content: center;
-  overflow: hidden;
-}
-
-/* ---------- ORBIT (pure CSS) ---------- */
-
-.orbit-container {
-  position: relative;
-  width: 420px;
-  height: 420px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.particle-globe {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 180px;
-  height: 90px;
-  background-image: radial-gradient(circle, rgba(196,132,90,0.5) 1px, transparent 1px);
-  background-size: 8px 8px;
-  background-color: transparent;
-  border-radius: 180px 180px 0 0;
-  mask-image: radial-gradient(ellipse 100% 100% at 50% 100%, black 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 100%, black 40%, transparent 100%);
-  animation: globe-rotate 20s linear infinite;
-}
-
-@keyframes globe-rotate {
-  from { transform: translateX(-50%) rotate(0deg); }
-  to   { transform: translateX(-50%) rotate(360deg); }
-}
-
-.orbit-ring {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid;
-  border-radius: 50%;
-}
-
-.ring-1 { width: 220px; height: 80px;  border-color: rgba(255,255,255,0.10); }
-.ring-2 { width: 320px; height: 115px; border-color: rgba(255,255,255,0.07); }
-.ring-3 { width: 420px; height: 150px; border-color: rgba(255,255,255,0.05); }
-
-.orbit-arm {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: calc(var(--ring-w) / 2);
-  height: var(--ring-h);
-  transform-origin: 0% 100%;
-  animation: orbit-spin var(--orbit-duration) linear infinite;
-  animation-delay: var(--start-delay, 0s);
-}
-
-.orbit-icon-wrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40px;
-  height: 40px;
-  transform: translate(-50%, -50%);
   border-radius: 50%;
   background: rgba(28,22,18,0.92);
   border: 1px solid rgba(255,255,255,0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: counter-spin var(--orbit-duration) linear infinite;
-  animation-delay: var(--start-delay, 0s);
+  will-change: transform;
 }
 
-.orbit-icon-wrap img {
-  width: 20px;
-  height: 20px;
+.integration-icon-item img {
+  width: 26px;
+  height: 26px;
   object-fit: contain;
-}
-
-@keyframes orbit-spin {
-  from { transform: rotate(var(--start-angle)); }
-  to   { transform: rotate(calc(var(--start-angle) + 360deg)); }
-}
-
-@keyframes counter-spin {
-  from { transform: translate(-50%, -50%) rotate(calc(-1 * var(--start-angle))); }
-  to   { transform: translate(-50%, -50%) rotate(calc(-1 * var(--start-angle) - 360deg)); }
 }
 
 /* ---------- FEATURES ---------- */
@@ -1517,40 +1444,24 @@ body.nav-scrolled .nav-pill {
     pointer-events: auto !important;
   }
 
-  .integration-inner {
-    grid-template-columns: 1fr;
+  .integration-scroll-wrap {
+    height: 180vh;
   }
 
-  .integration-text {
-    text-align: center;
+  .integration-icon-row {
+    gap: 16px;
   }
 
-  .integration-list {
-    align-items: center;
+  .integration-icon-item {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
   }
 
-  .integration-list li {
-    justify-content: center;
+  .integration-icon-item img {
+    width: 20px;
+    height: 20px;
   }
-
-  .orbit-container {
-    width: 260px;
-    height: 260px;
-    margin: 0 auto;
-  }
-
-  .particle-globe {
-    width: 111px;
-    height: 56px;
-  }
-
-  .ring-1 { width: 136px; height: 49px; }
-  .ring-2 { width: 198px; height: 71px; }
-  .ring-3 { width: 260px; height: 93px; }
-
-  .ring-1 .orbit-arm { --ring-w: 136px !important; --ring-h: 49px !important; }
-  .ring-2 .orbit-arm { --ring-w: 198px !important; --ring-h: 71px !important; }
-  .ring-3 .orbit-arm { --ring-w: 260px !important; --ring-h: 93px !important; }
 
   .about-hero-block {
     grid-template-columns: 1fr;

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   initArcPreloader(revealHeroContent);
   animateCounter();
+  initIntegrationScroll();
   initCodeAnimation();
   initNavRouting();
   initNavScroll();
@@ -122,6 +123,73 @@ function revealHeroContent() {
   window.setTimeout(() => {
     el.classList.add('is-visible');
   }, 100);
+}
+
+/* ---------- Integration scroll reveal ---------- */
+
+function initIntegrationScroll() {
+  const wrap = document.getElementById('integration-scroll-wrap');
+  const headline = document.getElementById('integration-headline');
+  const iconRow = document.getElementById('integration-icon-row');
+  if (!wrap || !headline || !iconRow) return;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
+
+  const words = Array.from(headline.querySelectorAll('.scrub-word'));
+  const icons = Array.from(iconRow.querySelectorAll('.integration-icon-item'));
+  const wordCenter = (words.length - 1) / 2;
+  const iconCenter = (icons.length - 1) / 2;
+
+  function lerp(from, to, t) {
+    return from + (to - from) * t;
+  }
+
+  function rangeProgress(t, start, end) {
+    return Math.min(Math.max((t - start) / (end - start), 0), 1);
+  }
+
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+
+    const rect = wrap.getBoundingClientRect();
+    const scrollableDistance = wrap.offsetHeight - window.innerHeight;
+    const scrolled = -rect.top;
+    const progress = scrollableDistance > 0
+      ? Math.min(Math.max(scrolled / scrollableDistance, 0), 1)
+      : 0;
+
+    const wordT = rangeProgress(progress, 0, 0.5);
+    words.forEach((word, i) => {
+      const distance = i - wordCenter;
+      const x = lerp(distance * 60, 0, wordT);
+      const rotateX = lerp(distance * 15, 0, wordT);
+      word.style.transform = `translateX(${x}px) rotateX(${rotateX}deg)`;
+    });
+
+    const iconT = rangeProgress(progress, 0.35, 0.85);
+    icons.forEach((icon, i) => {
+      const distance = i - iconCenter;
+      const x = lerp(distance * 70, 0, iconT);
+      const y = lerp(Math.abs(distance) * 40, 0, iconT);
+      const scale = lerp(0.6, 1, iconT);
+      icon.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    });
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 }
 
 /* ---------- Counter animation ---------- */

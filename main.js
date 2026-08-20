@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  initArcPreloader();
   runDecryptEffect();
   animateCounter();
   initCodeAnimation();
@@ -7,6 +8,108 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavPill();
   initContactForm();
 });
+
+/* ---------- Arc preloader ---------- */
+
+function cubicBezier(x1, y1, x2, y2) {
+  const A = (a1, a2) => 1.0 - 3.0 * a2 + 3.0 * a1;
+  const B = (a1, a2) => 3.0 * a2 - 6.0 * a1;
+  const C = (a1) => 3.0 * a1;
+  const calcBezier = (t, a1, a2) => ((A(a1, a2) * t + B(a1, a2)) * t + C(a1)) * t;
+  const calcSlope = (t, a1, a2) => 3.0 * A(a1, a2) * t * t + 2.0 * B(a1, a2) * t + C(a1);
+
+  function getTForX(x) {
+    let t = x;
+    for (let i = 0; i < 8; i++) {
+      const slope = calcSlope(t, x1, x2);
+      if (slope === 0) return t;
+      t -= (calcBezier(t, x1, x2) - x) / slope;
+    }
+    return t;
+  }
+
+  return (x) => calcBezier(getTForX(x), y1, y2);
+}
+
+function initArcPreloader() {
+  const el = document.getElementById('arc-preloader');
+  const greetingEl = document.getElementById('arc-preloader-greeting');
+  const pathEl = document.getElementById('arc-preloader-path');
+  if (!el || !greetingEl || !pathEl) return;
+
+  const GREETINGS = ['Quiet.', 'Sharp.', 'Calm.', 'Crafted.', 'Considered.', 'Composed.', 'Honest.', 'Ready.'];
+  const HOLD = 420; // ms each word stays fully visible
+  const EXIT = 240; // ms fade-out before the next word
+  const REVEAL_DURATION = 1500; // ms curtain sweep
+  const ease = cubicBezier(0.85, 0, 0.15, 1);
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function setPath(edge) {
+    const control = edge + 25;
+    pathEl.setAttribute('d', `M 0 ${edge} Q 50 ${control} 100 ${edge} L 100 110 L 0 110 Z`);
+  }
+
+  function finish() {
+    el.setAttribute('data-done', 'true');
+    document.documentElement.style.overflow = '';
+    window.setTimeout(() => {
+      el.hidden = true;
+    }, 500);
+  }
+
+  if (prefersReducedMotion) {
+    setPath(-30);
+    finish();
+    return;
+  }
+
+  document.documentElement.style.overflow = 'hidden';
+  setPath(110);
+
+  function showWord(i) {
+    greetingEl.textContent = GREETINGS[i];
+    greetingEl.classList.remove('is-leaving');
+    void greetingEl.offsetWidth; // force reflow so the transition re-triggers
+    greetingEl.classList.add('is-visible');
+  }
+
+  function startReveal() {
+    const start = performance.now();
+
+    function tick(now) {
+      const t = Math.min((now - start) / REVEAL_DURATION, 1);
+      setPath(110 - ease(t) * 140);
+
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        finish();
+      }
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function cycle(i) {
+    showWord(i);
+    const isLast = i >= GREETINGS.length - 1;
+    const holdTime = isLast ? HOLD + 220 : HOLD;
+
+    window.setTimeout(() => {
+      greetingEl.classList.remove('is-visible');
+      greetingEl.classList.add('is-leaving');
+
+      if (isLast) {
+        startReveal();
+      } else {
+        window.setTimeout(() => cycle(i + 1), EXIT);
+      }
+    }, holdTime);
+  }
+
+  cycle(0);
+}
 
 /* ---------- Decrypt / scramble headline ---------- */
 

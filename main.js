@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  initArcPreloader();
-  runDecryptEffect();
+  initArcPreloader(revealHeroContent);
   animateCounter();
   initCodeAnimation();
   initNavRouting();
@@ -31,7 +30,7 @@ function cubicBezier(x1, y1, x2, y2) {
   return (x) => calcBezier(getTForX(x), y1, y2);
 }
 
-function initArcPreloader() {
+function initArcPreloader(onDone) {
   const el = document.getElementById('arc-preloader');
   const greetingEl = document.getElementById('arc-preloader-greeting');
   const pathEl = document.getElementById('arc-preloader-path');
@@ -56,6 +55,9 @@ function initArcPreloader() {
     window.setTimeout(() => {
       el.hidden = true;
     }, 500);
+    if (typeof onDone === 'function') {
+      onDone();
+    }
   }
 
   if (prefersReducedMotion) {
@@ -111,71 +113,15 @@ function initArcPreloader() {
   cycle(0);
 }
 
-/* ---------- Decrypt / scramble headline ---------- */
+/* ---------- Hero content reveal ---------- */
 
-function runDecryptEffect() {
-  const el = document.getElementById('decrypt-headline');
+function revealHeroContent() {
+  const el = document.getElementById('hero-content');
   if (!el) return;
 
-  const glyphs = '#%&@$?!*+=/{}[]<>~^';
-  const text = el.getAttribute('data-text') || el.textContent;
-  const chars = text.split('');
-
-  const stagger = 80; // ms between each character locking in
-  const jitterRange = 100; // +/- 100ms random spread
-  const startDelay = 600; // ms before the first character can lock
-  const speed = 65; // ms per glyph cycle while scrambling
-
-  el.textContent = '';
-  el.setAttribute('aria-label', text);
-
-  const spans = [];
-  let wordWrapper = document.createElement('span');
-  wordWrapper.className = 'word';
-  el.appendChild(wordWrapper);
-
-  chars.forEach((ch) => {
-    if (ch === String.fromCharCode(32)) {
-      el.appendChild(document.createTextNode(String.fromCharCode(32)));
-      wordWrapper = document.createElement('span');
-      wordWrapper.className = 'word';
-      el.appendChild(wordWrapper);
-      spans.push(null);
-      return;
-    }
-
-    const span = document.createElement('span');
-    span.className = 'char';
-    span.textContent = ch;
-    wordWrapper.appendChild(span);
-    spans.push(span);
-  });
-
-  chars.forEach((ch, i) => {
-    const span = spans[i];
-
-    if (!span) {
-      return;
-    }
-
-    const jitter = Math.random() * jitterRange * 2 - jitterRange;
-    const lockDelay = startDelay + Math.max(0, i * stagger + jitter);
-
-    const scrambleInterval = setInterval(() => {
-      span.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
-    }, speed);
-
-    setTimeout(() => {
-      clearInterval(scrambleInterval);
-      span.textContent = ch;
-      span.classList.add('flash');
-
-      setTimeout(() => {
-        span.classList.remove('flash');
-        span.classList.add('locked');
-      }, 300);
-    }, lockDelay);
-  });
+  window.setTimeout(() => {
+    el.classList.add('is-visible');
+  }, 100);
 }
 
 /* ---------- Counter animation ---------- */

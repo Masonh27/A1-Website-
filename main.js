@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   initArcPreloader(revealHeroContent);
-  animateCounter();
-  initIntegrationScroll();
+  initScrollAnimations();
+  initFaqAccordion();
   initCodeAnimation();
   initNavRouting();
   initNavScroll();
@@ -37,7 +37,7 @@ function initArcPreloader(onDone) {
   const pathEl = document.getElementById('arc-preloader-path');
   if (!el || !greetingEl || !pathEl) return;
 
-  const GREETINGS = ['Quiet.', 'Sharp.', 'Calm.', 'Crafted.', 'Considered.', 'Composed.', 'Honest.', 'Ready.'];
+  const GREETINGS = ['Automate.', 'Systemize.', 'Optimize.', 'Delegate.', 'Scale.', 'Accelerate.', 'Innovate.', 'A1.'];
   const HOLD = 420; // ms each word stays fully visible
   const EXIT = 240; // ms fade-out before the next word
   const REVEAL_DURATION = 1500; // ms curtain sweep
@@ -125,146 +125,60 @@ function revealHeroContent() {
   }, 100);
 }
 
-/* ---------- Integration scroll reveal ---------- */
+/* ---------- Scroll-triggered section reveal (global) ---------- */
 
-function initIntegrationScroll() {
-  const section = document.getElementById('integration-scroll-wrap');
-  const headline = document.getElementById('integration-headline');
-  const iconRow = document.getElementById('integration-icon-row');
-  if (!section || !headline || !iconRow) return;
-
-  const words = Array.from(headline.querySelectorAll('.scrub-word'));
-  const icons = Array.from(iconRow.querySelectorAll('.integration-icon-item'));
-
-  // Fixed scatter offsets — index-matched to DOM order, not randomized per render.
-  const WORD_OFFSETS = [
-    { x: -180, y: -80, rotate: -12 }, // AI
-    { x: 120, y: -60, rotate: 8 },    // that
-    { x: -90, y: 100, rotate: -6 },   // plugs
-    { x: 160, y: 60, rotate: 10 },    // into
-    { x: -140, y: -90, rotate: -9 },  // what
-    { x: 80, y: 80, rotate: 6 },      // you
-    { x: -110, y: -70, rotate: -7 },  // already
-    { x: 150, y: 90, rotate: 11 },    // use.
-  ];
-
-  const ICON_OFFSETS = [
-    { x: -200, y: 60 },  // GHL
-    { x: -120, y: -80 }, // Twilio
-    { x: -60, y: 100 },  // Zapier
-    { x: 60, y: -100 },  // Calendly
-    { x: 120, y: 80 },   // Sheets
-    { x: 180, y: -60 },  // Stripe
-    { x: 200, y: 40 },   // QuickBooks
-  ];
-
-  function wordScatterTransform(offset) {
-    return `translateX(${offset.x}px) translateY(${offset.y}px) rotate(${offset.rotate}deg)`;
-  }
-
-  function iconScatterTransform(offset) {
-    return `translateX(${offset.x}px) translateY(${offset.y}px)`;
-  }
+function initScrollAnimations() {
+  const targets = document.querySelectorAll('.animate-ready');
+  if (!targets.length) return;
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    words.forEach((word) => {
-      word.style.opacity = '1';
-      word.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-    });
-    icons.forEach((icon) => {
-      icon.style.opacity = '1';
-      icon.style.transform = 'translateX(0) translateY(0)';
-    });
+    targets.forEach((el) => el.classList.add('animate-in'));
     return;
   }
 
-  words.forEach((word, i) => {
-    word.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease';
-    word.style.opacity = '0';
-    word.style.transform = wordScatterTransform(WORD_OFFSETS[i]);
-  });
-
-  icons.forEach((icon, i) => {
-    icon.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease';
-    icon.style.opacity = '0';
-    icon.style.transform = iconScatterTransform(ICON_OFFSETS[i]);
-  });
-
-  // Phase 1 (progress 0 → 0.55): words lock in one by one.
-  const wordThresholds = words.map((_, i) => (i / (words.length - 1)) * 0.55);
-  // Phase 2 (progress 0.6 → 1.0): icons lock in one by one.
-  const iconThresholds = icons.map((_, i) => 0.6 + (i / (icons.length - 1)) * 0.4);
-
-  let ticking = false;
-
-  function update() {
-    ticking = false;
-
-    const sectionTop = section.offsetTop;
-    const sectionHeight = section.offsetHeight - window.innerHeight;
-    const scrolled = window.scrollY - sectionTop;
-    const progress = sectionHeight > 0
-      ? Math.max(0, Math.min(1, scrolled / sectionHeight))
-      : 0;
-
-    words.forEach((word, i) => {
-      if (progress >= wordThresholds[i]) {
-        word.style.opacity = '1';
-        word.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-      } else {
-        word.style.opacity = '0';
-        word.style.transform = wordScatterTransform(WORD_OFFSETS[i]);
-      }
-    });
-
-    icons.forEach((icon, i) => {
-      if (progress >= iconThresholds[i]) {
-        icon.style.opacity = '1';
-        icon.style.transform = 'translateX(0) translateY(0)';
-      } else {
-        icon.style.opacity = '0';
-        icon.style.transform = iconScatterTransform(ICON_OFFSETS[i]);
-      }
-    });
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach((el) => el.classList.add('animate-in'));
+    return;
   }
 
-  function onScroll() {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
+  targets.forEach((el) => observer.observe(el));
 }
 
-/* ---------- Counter animation ---------- */
+/* ---------- FAQ accordion ---------- */
 
-function animateCounter() {
-  const el = document.getElementById('counter');
-  if (!el) return;
+function initFaqAccordion() {
+  const items = document.querySelectorAll('.faq-item');
+  if (!items.length) return;
 
-  const target = parseInt(el.getAttribute('data-target'), 10) || 0;
-  const duration = 2000;
-  const start = performance.now();
+  items.forEach((item) => {
+    const question = item.querySelector('.faq-question');
+    if (!question) return;
 
-  function tick(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 2); // ease-out
-    const value = Math.round(eased * target);
-    el.textContent = value;
+    question.addEventListener('click', () => {
+      const wasOpen = item.classList.contains('is-open');
 
-    if (progress < 1) {
-      requestAnimationFrame(tick);
-    } else {
-      el.textContent = target;
-    }
-  }
+      items.forEach((other) => {
+        other.classList.remove('is-open');
+        const otherIcon = other.querySelector('.faq-toggle-icon');
+        if (otherIcon) otherIcon.textContent = '+';
+      });
 
-  requestAnimationFrame(tick);
+      if (!wasOpen) {
+        item.classList.add('is-open');
+        const icon = item.querySelector('.faq-toggle-icon');
+        if (icon) icon.textContent = '−';
+      }
+    });
+  });
 }
 
 /* ---------- About page: live code animation ---------- */

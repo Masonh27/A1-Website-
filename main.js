@@ -1,16 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
   initArcPreloader(revealHeroContent);
-  initScrollAnimations();
   initFaqAccordion();
   initCodeAnimation();
   initNavRouting();
   initNavScroll();
   initNavPill();
   initContactForm();
-  initProblemCardsScroll();
-  initOfferBoxScroll();
-  initProcessConnector();
-  initApproachRowsScroll();
+  initScrollDrivenAnimations();
 });
 
 /* ---------- Arc preloader ---------- */
@@ -137,34 +133,6 @@ function revealHeroContent() {
   window.setTimeout(() => {
     el.classList.add('is-visible');
   }, 100);
-}
-
-/* ---------- Scroll-triggered section reveal (global) ---------- */
-
-function initScrollAnimations() {
-  const targets = document.querySelectorAll('.animate-ready');
-  if (!targets.length) return;
-
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    targets.forEach((el) => el.classList.add('animate-in'));
-    return;
-  }
-
-  if (!('IntersectionObserver' in window)) {
-    targets.forEach((el) => el.classList.add('animate-in'));
-    return;
-  }
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('animate-in');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
-
-  targets.forEach((el) => observer.observe(el));
 }
 
 /* ---------- FAQ accordion ---------- */
@@ -377,146 +345,140 @@ function initContactForm() {
   });
 }
 
-/* ---------- Problem cards: reversible slide in/out ---------- */
+/* ---------- Scroll-driven animation system ---------- */
+/* Every animation below is a direct function of current scroll position,
+   recomputed on every scroll (and resize) tick — nothing fires once and
+   stops; everything responds to scrolling in both directions. */
 
-function initProblemCardsScroll() {
-  const section = document.getElementById('problem-section');
-  const timeCard = document.getElementById('pain-card-time');
-  const revenueCard = document.getElementById('pain-card-revenue');
-  if (!section || !timeCard || !revenueCard) return;
-
-  const IN_TRANSITION = 'border-color 0.2s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease';
-  const OUT_TRANSITION = 'border-color 0.2s, transform 0.6s ease-in, opacity 0.4s ease-in';
-
-  function setIn() {
-    timeCard.style.transition = IN_TRANSITION;
-    revenueCard.style.transition = IN_TRANSITION;
-    timeCard.style.transform = 'translateX(0)';
-    timeCard.style.opacity = '1';
-    revenueCard.style.transform = 'translateX(0)';
-    revenueCard.style.opacity = '1';
-  }
-
-  function setOut() {
-    timeCard.style.transition = OUT_TRANSITION;
-    revenueCard.style.transition = OUT_TRANSITION;
-    timeCard.style.transform = 'translateX(-100vw)';
-    timeCard.style.opacity = '0';
-    revenueCard.style.transform = 'translateX(100vw)';
-    revenueCard.style.opacity = '0';
-  }
-
-  let ticking = false;
-
-  function update() {
-    ticking = false;
-    const rect = section.getBoundingClientRect();
-    const windowH = window.innerHeight;
-
-    if (rect.top > windowH) {
-      setOut();
-    } else if (rect.bottom < windowH * 0.2) {
-      setOut();
-    } else if (rect.top < windowH * 0.7 && rect.bottom > 0) {
-      setIn();
-    }
-  }
-
-  function onScroll() {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
+function getScrollProgress(element, enterAt = 0.85, exitAt = 0.1) {
+  const rect = element.getBoundingClientRect();
+  const windowH = window.innerHeight;
+  const enterProgress = Math.max(0, Math.min(1, (windowH * enterAt - rect.top) / (windowH * 0.4)));
+  return enterProgress;
 }
 
-/* ---------- Offer box: slides up into place ---------- */
+function initScrollDrivenAnimations() {
+  const problemSection = document.getElementById('problem-section');
+  const timeCard = problemSection ? problemSection.querySelector('.time-card') : null;
+  const revenueCard = problemSection ? problemSection.querySelector('.revenue-card') : null;
 
-function initOfferBoxScroll() {
-  const section = document.getElementById('offer-section');
-  const box = document.getElementById('offer-box');
-  if (!section || !box) return;
+  const offerSection = document.getElementById('offer-section');
+  const offerTitleArea = offerSection ? offerSection.querySelector('.offer-title-area') : null;
+  const offerCard = offerSection ? offerSection.querySelector('.offer-card') : null;
 
-  let ticking = false;
+  const processSection = document.getElementById('process-section');
+  const lineTrack = processSection ? processSection.querySelector('.process-line-track') : null;
+  const lineFill = processSection ? processSection.querySelector('.process-line-fill') : null;
+  const processSteps = processSection ? Array.from(processSection.querySelectorAll('.process-step')) : [];
 
-  function update() {
-    ticking = false;
-    const rect = section.getBoundingClientRect();
+  const approachRows = Array.from(document.querySelectorAll('.approach-row'));
+
+  const fitSection = document.getElementById('fit-section');
+  const faqSection = document.getElementById('faq-section');
+  const finalCta = document.getElementById('final-cta');
+  const faqItems = faqSection ? Array.from(faqSection.querySelectorAll('.faq-item')) : [];
+  const finalCtaBtn = finalCta ? finalCta.querySelector('.final-cta-btn') : null;
+
+  function positionProcessLine() {
+    if (!processSection || !lineTrack || !lineFill) return;
+    const firstIconBox = processSection.querySelector('.process-step-icon');
+    if (!firstIconBox) return;
+    const lineTop = firstIconBox.offsetTop + firstIconBox.offsetHeight / 2;
+    lineTrack.style.top = lineTop + 'px';
+    lineFill.style.top = lineTop + 'px';
+  }
+
+  function runProblemCards() {
+    if (!problemSection || !timeCard || !revenueCard) return;
+
+    const rect = problemSection.getBoundingClientRect();
+    const sectionScrolled = -rect.top;
+    const sectionHeight = problemSection.offsetHeight - window.innerHeight;
+    const progress = Math.max(0, Math.min(1, sectionScrolled / Math.max(sectionHeight, 1)));
+
+    // Phase 1 (0 → 0.4): cards slide in from the sides.
+    const slideInProgress = Math.max(0, Math.min(1, progress / 0.4));
+    const timeX = (1 - slideInProgress) * -100;
+    const revenueX = (1 - slideInProgress) * 100;
+
+    // Phase 2 (0.6 → 1.0): cards continue sliding out the far side.
+    const slideOutProgress = Math.max(0, Math.min(1, (progress - 0.6) / 0.4));
+    const timeXFinal = timeX - slideOutProgress * 100;
+    const revenueXFinal = revenueX + slideOutProgress * 100;
+
+    timeCard.style.transform = 'translateX(' + timeXFinal + 'vw)';
+    revenueCard.style.transform = 'translateX(' + revenueXFinal + 'vw)';
+
+    const opacity = progress < 0.4 ? slideInProgress : progress > 0.6 ? 1 - slideOutProgress : 1;
+    timeCard.style.opacity = String(opacity);
+    revenueCard.style.opacity = String(opacity);
+  }
+
+  function runOfferCard() {
+    if (!offerSection || !offerTitleArea || !offerCard) return;
+
+    const offerRect = offerSection.getBoundingClientRect();
+    const offerScrolled = window.scrollY - offerSection.offsetTop;
+    const offerHeight = offerSection.offsetHeight - window.innerHeight;
+    const offerProgress = Math.max(0, Math.min(1, offerScrolled / Math.max(offerHeight, 1)));
+
+    const rotateX = 20 - offerProgress * 20;
+
+    const isMobile = window.innerWidth <= 768;
+    const scaleStart = isMobile ? 0.7 : 1.05;
+    const scaleEnd = isMobile ? 0.9 : 1.0;
+    const scale = scaleStart + offerProgress * (scaleEnd - scaleStart);
+
+    const titleTranslateY = offerProgress * -80;
+
+    if (offerRect.bottom > 0 && offerRect.top < window.innerHeight * 1.2) {
+      offerCard.style.transform = 'rotateX(' + rotateX + 'deg) scale(' + scale + ')';
+      offerTitleArea.style.transform = 'translateY(' + titleTranslateY + 'px)';
+
+      const fadeProgress = Math.max(0, Math.min(1, (window.innerHeight - offerRect.top) / (window.innerHeight * 0.5)));
+      offerSection.style.opacity = String(fadeProgress);
+    }
+
+    if (offerRect.bottom < -100) {
+      offerCard.style.transform = 'rotateX(0deg) scale(1)';
+      offerTitleArea.style.transform = 'translateY(-80px)';
+    }
+
+    if (offerRect.top > window.innerHeight * 1.2) {
+      offerCard.style.transform = 'rotateX(20deg) scale(1.05)';
+      offerTitleArea.style.transform = 'translateY(0px)';
+      offerSection.style.opacity = '0';
+    }
+  }
+
+  function runProcessLine() {
+    if (!processSection || !lineFill) return;
+
+    const rect = processSection.getBoundingClientRect();
     const windowH = window.innerHeight;
 
-    if (rect.top < windowH * 0.75) {
-      box.style.transform = 'translateY(0) scale(1)';
-      box.style.opacity = '1';
+    const drawProgress = Math.max(0, Math.min(1, (windowH * 0.85 - rect.top) / (windowH * 0.55)));
+    lineFill.style.transform = 'scaleX(' + drawProgress + ')';
+
+    if (drawProgress > 0.5) {
+      lineFill.style.animationPlayState = 'running';
     } else {
-      box.style.transform = 'translateY(80px) scale(0.97)';
-      box.style.opacity = '0';
+      lineFill.style.animationPlayState = 'paused';
+      lineFill.style.backgroundPosition = '100% 0';
     }
-  }
 
-  function onScroll() {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
-}
-
-/* ---------- Process connector: single flowing SVG line ---------- */
-
-function initProcessConnector() {
-  const section = document.getElementById('process-section');
-  const stepsRow = document.querySelector('.process-steps');
-  const iconBox = stepsRow ? stepsRow.querySelector('.process-step-icon') : null;
-  const svg = document.querySelector('.process-connector-svg');
-  if (!section || !stepsRow || !iconBox || !svg) return;
-
-  function positionSvg() {
-    svg.style.top = iconBox.offsetTop + 'px';
-    svg.style.height = iconBox.offsetHeight + 'px';
-  }
-
-  positionSvg();
-  window.addEventListener('resize', positionSvg);
-
-  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    svg.classList.add('is-visible');
-    return;
-  }
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        positionSvg();
-        svg.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      }
+    processSteps.forEach((step, i) => {
+      const stepRect = step.getBoundingClientRect();
+      const enterAt = 0.85 - i * 0.05; // slight per-step cascade purely from scroll position
+      const p = Math.max(0, Math.min(1, (windowH * enterAt - stepRect.top) / (windowH * 0.4)));
+      step.style.opacity = String(p);
+      step.style.transform = 'translateX(' + (1 - p) * -30 + 'px)';
     });
-  }, { threshold: 0.3 });
+  }
 
-  observer.observe(section);
-}
-
-/* ---------- Approach rows: reversible alternating slide-in ---------- */
-
-function initApproachRowsScroll() {
-  const rows = Array.from(document.querySelectorAll('.approach-row'));
-  if (!rows.length) return;
-
-  let ticking = false;
-
-  function update() {
-    ticking = false;
+  function runApproachRows() {
     const windowH = window.innerHeight;
-
-    rows.forEach((row) => {
+    approachRows.forEach((row) => {
       const rect = row.getBoundingClientRect();
       if (rect.top < windowH * 0.85 && rect.bottom > 0) {
         row.classList.add('is-in');
@@ -526,14 +488,54 @@ function initApproachRowsScroll() {
     });
   }
 
-  function onScroll() {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
+  function runBottomSections() {
+    [fitSection, faqSection, finalCta].forEach((section) => {
+      if (!section) return;
+      const progress = getScrollProgress(section);
+      section.style.opacity = String(progress);
+      section.style.transform = 'translateY(' + (1 - progress) * 40 + 'px)';
+    });
+
+    if (faqSection && faqItems.length) {
+      const faqProgress = getScrollProgress(faqSection);
+      faqItems.forEach((item, i) => {
+        const itemVisible = faqProgress > i * 0.12;
+        item.style.opacity = itemVisible ? '1' : '0';
+        item.style.transform = itemVisible ? 'translateY(0)' : 'translateY(20px)';
+      });
+    }
+
+    if (finalCta && finalCtaBtn) {
+      const finalProgress = getScrollProgress(finalCta);
+      finalCtaBtn.classList.toggle('is-pulsing', finalProgress > 0.8);
     }
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
-  update();
+  function runAllScrollAnimations() {
+    runProblemCards();
+    runOfferCard();
+    runProcessLine();
+    runApproachRows();
+    runBottomSections();
+  }
+
+  let ticking = false;
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        runAllScrollAnimations();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  window.addEventListener('resize', () => {
+    positionProcessLine();
+    runAllScrollAnimations();
+  });
+
+  positionProcessLine();
+  runAllScrollAnimations();
 }

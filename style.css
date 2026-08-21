@@ -18,7 +18,6 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
 }
 
 body {
@@ -486,19 +485,6 @@ body.nav-scrolled .nav-pill {
   display: none;
 }
 
-/* ---------- SCROLL ANIMATIONS (GLOBAL) ---------- */
-
-.animate-ready {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.animate-in {
-  opacity: 1 !important;
-  transform: none !important;
-}
-
 /* features-headline / features-subtext are shared with the Services page */
 
 .features-headline {
@@ -518,11 +504,20 @@ body.nav-scrolled .nav-pill {
 
 .how-we-work-section {
   position: relative;
+  min-height: 200vh;
+}
+
+.how-we-work-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  padding: 140px 24px;
   text-align: center;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  padding: 0 24px;
 }
 
 .floating-icon {
@@ -613,12 +608,25 @@ body.nav-scrolled .nav-pill {
 /* ---------- PROBLEM AGITATION ---------- */
 
 .problem-section {
-  padding: 120px 24px;
+  position: relative;
+  min-height: 250vh;
+}
+
+.problem-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 24px;
 }
 
 .problem-inner {
   max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .problem-headline {
@@ -642,16 +650,18 @@ body.nav-scrolled .nav-pill {
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 8px;
   padding: 40px;
-  opacity: 0;
-  transition: border-color 0.2s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
 }
 
-#pain-card-time {
+.time-card {
   transform: translateX(-100vw);
+  opacity: 0;
+  transition: none;
 }
 
-#pain-card-revenue {
+.revenue-card {
   transform: translateX(100vw);
+  opacity: 0;
+  transition: none;
 }
 
 .pain-card:hover {
@@ -700,22 +710,53 @@ body.nav-scrolled .nav-pill {
 /* ---------- THE OFFER (FREE AUDIT) ---------- */
 
 .offer-section {
-  padding: 120px 24px;
+  position: relative;
+  padding: 0;
+  opacity: 0;
+  transition: none;
 }
 
-.offer-inner {
-  max-width: 900px;
-  margin: 0 auto;
+.offer-scroll-container {
+  min-height: 160vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 120px 24px 80px;
+  position: relative;
 }
 
-.offer-box {
+.offer-title-area {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 48px;
+  will-change: transform;
+  transition: none;
+}
+
+.offer-card-wrapper {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 860px;
+  will-change: transform;
+}
+
+.offer-card {
   border: 1px solid rgba(196,132,90,0.20);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 64px 56px;
   background: rgba(196,132,90,0.03);
-  transform: translateY(80px) scale(0.97);
-  opacity: 0;
-  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s ease;
+  will-change: transform;
+  transform-origin: center top;
+  transform: rotateX(20deg) scale(1.05);
+  box-shadow:
+    0 0 #0000004d,
+    0 9px 20px #0000004a,
+    0 37px 37px #00000042,
+    0 84px 50px #00000026,
+    0 149px 60px #0000000a;
+  transition: none;
 }
 
 .offer-headline {
@@ -833,42 +874,40 @@ body.nav-scrolled .nav-pill {
 .process-step {
   flex: 1;
   min-width: 0;
-}
-
-.process-step.animate-ready {
+  opacity: 0;
   transform: translateX(-30px);
+  transition: none;
 }
 
-.process-connector-svg {
+.process-line-track,
+.process-line-fill {
   position: absolute;
-  left: 0;
-  width: 100%;
+  top: 43px;
+  left: 28px;
+  right: 28px;
+  height: 2px;
   pointer-events: none;
-  overflow: visible;
 }
 
-.connector-track {
-  stroke: rgba(255,255,255,0.06);
-  stroke-width: 1.5;
-  stroke-dasharray: 6 4;
+.process-line-track {
+  background: rgba(255,255,255,0.06);
 }
 
-.connector-flow {
-  stroke: url(#flow-gradient);
-  stroke-width: 2;
-  stroke-dasharray: 80 400;
-  stroke-dashoffset: 400;
-  animation: flow-dash 2.5s linear infinite;
+.process-line-fill {
+  background: linear-gradient(90deg,
+    rgba(196,132,90,0.2) 0%,
+    rgba(196,132,90,0.9) 50%,
+    rgba(196,132,90,0.2) 100%);
+  background-size: 200% 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: line-flow 2s linear infinite;
   animation-play-state: paused;
 }
 
-.process-connector-svg.is-visible .connector-flow {
-  animation-play-state: running;
-}
-
-@keyframes flow-dash {
-  0%   { stroke-dashoffset: 400; }
-  100% { stroke-dashoffset: -400; }
+@keyframes line-flow {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .process-step-icon {
@@ -918,6 +957,13 @@ body.nav-scrolled .nav-pill {
   margin: 0 auto;
 }
 
+.outcomes-inner > .eyebrow {
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .outcomes-headline {
   font-family: Georgia, serif;
   font-size: clamp(1.8rem, 3vw, 2.6rem);
@@ -925,6 +971,10 @@ body.nav-scrolled .nav-pill {
   font-weight: normal;
   line-height: 1.25;
   margin-top: 16px;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .outcomes-headline-line {
@@ -936,8 +986,11 @@ body.nav-scrolled .nav-pill {
   font-size: 1rem;
   color: var(--accent-dim);
   line-height: 1.8;
-  max-width: 680px;
+  max-width: 800px;
   margin-top: 16px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 .approach-rows {
@@ -1015,12 +1068,27 @@ body.nav-scrolled .nav-pill {
 /* ---------- WHO THIS IS FOR ---------- */
 
 .fit-section {
+  position: relative;
+  min-height: 100vh;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: none;
+}
+
+.fit-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 100px 24px;
 }
 
 .fit-inner {
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .fit-headline {
@@ -1044,14 +1112,6 @@ body.nav-scrolled .nav-pill {
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   margin-top: 48px;
-}
-
-.fit-col-good.animate-ready {
-  transform: translateX(-30px);
-}
-
-.fit-col-notfit.animate-ready {
-  transform: translateX(30px);
 }
 
 .fit-col-header {
@@ -1095,12 +1155,27 @@ body.nav-scrolled .nav-pill {
 /* ---------- FAQ ---------- */
 
 .faq-section {
+  position: relative;
+  min-height: 100vh;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: none;
+}
+
+.faq-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 100px 24px;
 }
 
 .faq-inner {
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .faq-headline {
@@ -1117,6 +1192,9 @@ body.nav-scrolled .nav-pill {
 
 .faq-item {
   border-bottom: 1px solid rgba(255,255,255,0.07);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: none;
 }
 
 .faq-question {
@@ -1166,11 +1244,24 @@ body.nav-scrolled .nav-pill {
 
 .final-cta {
   position: relative;
+  min-height: 100vh;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: none;
+}
+
+.final-cta-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 140px 24px;
   text-align: center;
 }
 
-.final-cta::before {
+.final-cta-sticky::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1182,6 +1273,7 @@ body.nav-scrolled .nav-pill {
   position: relative;
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .final-cta-headline {
@@ -1209,6 +1301,11 @@ body.nav-scrolled .nav-pill {
   font-size: 1rem;
   font-weight: 600;
   animation: final-cta-pulse 3s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.final-cta-btn.is-pulsing {
+  animation-play-state: running;
 }
 
 @keyframes final-cta-pulse {
@@ -1927,7 +2024,7 @@ body.nav-scrolled .nav-pill {
     grid-template-columns: 1fr;
   }
 
-  .offer-box {
+  .offer-card {
     padding: 40px 28px;
   }
 
@@ -1936,7 +2033,8 @@ body.nav-scrolled .nav-pill {
     gap: 32px;
   }
 
-  .process-connector-svg {
+  .process-line-track,
+  .process-line-fill {
     display: none;
   }
 

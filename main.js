@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavPill();
   initContactForm();
   initScrollDrivenAnimations();
+  initOrbitCanvas();
 });
 
 /* ---------- Arc preloader ---------- */
@@ -548,4 +549,121 @@ function initScrollDrivenAnimations() {
 
   positionConnector();
   runAllScrollAnimations();
+}
+
+/* ---------- Offer card orbiting glow ---------- */
+
+function initOrbitCanvas() {
+  const wrapper = document.querySelector('.offer-card-orbit-wrapper');
+  if (!wrapper) return;
+  const canvas = wrapper.querySelector('.orbit-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let angle = 0;
+  const speed = 0.008; // radians per frame — slow and smooth
+
+  function resizeCanvas() {
+    canvas.width = wrapper.offsetWidth + 4;
+    canvas.height = wrapper.offsetHeight + 4;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function getPerimeterPoint(angle, w, h, r) {
+    // Travels around a rounded rectangle perimeter
+    const perimeter = 2 * (w + h) - 8 * r + 2 * Math.PI * r;
+    const dist = ((angle % (2 * Math.PI)) / (2 * Math.PI)) * perimeter;
+
+    // Top edge (left to right)
+    const topLen = w - 2 * r;
+    if (dist < topLen) return { x: r + dist, y: 0 };
+    let d = dist - topLen;
+
+    // Top-right corner
+    const quarterCircle = Math.PI * r / 2;
+    if (d < quarterCircle) {
+      const a = -Math.PI / 2 + (d / r);
+      return { x: w - r + Math.cos(a) * r, y: r + Math.sin(a) * r };
+    }
+    d -= quarterCircle;
+
+    // Right edge (top to bottom)
+    const rightLen = h - 2 * r;
+    if (d < rightLen) return { x: w, y: r + d };
+    d -= rightLen;
+
+    // Bottom-right corner
+    if (d < quarterCircle) {
+      const a = (d / r);
+      return { x: w - r + Math.cos(a) * r, y: h - r + Math.sin(a) * r };
+    }
+    d -= quarterCircle;
+
+    // Bottom edge (right to left)
+    const bottomLen = w - 2 * r;
+    if (d < bottomLen) return { x: w - r - d, y: h };
+    d -= bottomLen;
+
+    // Bottom-left corner
+    if (d < quarterCircle) {
+      const a = Math.PI / 2 + (d / r);
+      return { x: r + Math.cos(a) * r, y: h - r + Math.sin(a) * r };
+    }
+    d -= quarterCircle;
+
+    // Left edge (bottom to top)
+    const leftLen = h - 2 * r;
+    if (d < leftLen) return { x: 0, y: h - r - d };
+    d -= leftLen;
+
+    // Top-left corner
+    const a = Math.PI + (d / r);
+    return { x: r + Math.cos(a) * r, y: r + Math.sin(a) * r };
+  }
+
+  function draw() {
+    const w = canvas.width;
+    const h = canvas.height;
+    const r = 16; // border-radius of card
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Get current dot position on perimeter
+    const pos = getPerimeterPoint(angle, w, h, r);
+
+    // Draw trailing glow (several dots behind the main dot, fading out)
+    for (let i = 20; i >= 0; i--) {
+      const trailAngle = angle - i * 0.018;
+      const trailPos = getPerimeterPoint(trailAngle, w, h, r);
+      const trailOpacity = (1 - i / 20) * 0.25;
+      const trailRadius = 3 * (1 - i / 20);
+
+      ctx.beginPath();
+      ctx.arc(trailPos.x, trailPos.y, trailRadius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(196, 132, 90, ${trailOpacity})`;
+      ctx.fill();
+    }
+
+    // Draw glow halo around main dot
+    const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 14);
+    gradient.addColorStop(0, 'rgba(196, 132, 90, 0.6)');
+    gradient.addColorStop(0.4, 'rgba(196, 132, 90, 0.2)');
+    gradient.addColorStop(1, 'rgba(196, 132, 90, 0)');
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Draw main dot
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#c4845a';
+    ctx.fill();
+
+    angle += speed;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
 }

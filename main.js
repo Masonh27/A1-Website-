@@ -373,9 +373,6 @@ function initScrollDrivenAnimations() {
   const connectorDots = processSection ? processSection.querySelector('.connector-dots') : null;
   const connectorPulse = processSection ? processSection.querySelector('.connector-pulse') : null;
 
-  // --- Approach rows (Our Approach section) ---
-  const approachRows = Array.from(document.querySelectorAll('.approach-row'));
-
   // --- Who This Is For: stays a standalone reveal, not part of any sequence ---
   const fitSection = document.getElementById('fit-section');
 
@@ -483,18 +480,6 @@ function initScrollDrivenAnimations() {
     });
   }
 
-  function runApproachRows() {
-    const windowH = window.innerHeight;
-    approachRows.forEach((row) => {
-      const rect = row.getBoundingClientRect();
-      if (rect.top < windowH * 0.85 && rect.bottom > 0) {
-        row.classList.add('is-in');
-      } else {
-        row.classList.remove('is-in');
-      }
-    });
-  }
-
   function runFitSection() {
     if (!fitSection) return;
     const progress = getScrollProgress(fitSection);
@@ -540,7 +525,6 @@ function initScrollDrivenAnimations() {
   function runAllScrollAnimations() {
     runProblemOfferSequence();
     runProcessLine();
-    runApproachRows();
     runFitSection();
     runFaqCtaSequence();
   }

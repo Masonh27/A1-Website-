@@ -18,6 +18,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
 }
 
 body {
@@ -324,11 +325,11 @@ body.nav-scrolled .nav-pill {
 
 .hero-arc {
   position: absolute;
-  bottom: -120px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: min(900px, 110vw);
-  height: min(900px, 110vw);
+  transform: translate(-50%, -50%);
+  width: min(900px, 95vw);
+  height: min(900px, 95vw);
   z-index: 0;
   pointer-events: none;
   border-radius: 50%;
@@ -363,7 +364,7 @@ body.nav-scrolled .nav-pill {
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -520,6 +521,8 @@ body.nav-scrolled .nav-pill {
   overflow: hidden;
   padding: 140px 24px;
   text-align: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .floating-icon {
@@ -639,15 +642,16 @@ body.nav-scrolled .nav-pill {
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 8px;
   padding: 40px;
-  transition: border-color 0.2s, opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transition: border-color 0.2s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
 }
 
-.pain-card:nth-child(1).animate-ready {
-  transform: translateX(-30px);
+#pain-card-time {
+  transform: translateX(-100vw);
 }
 
-.pain-card:nth-child(2).animate-ready {
-  transform: translateX(30px);
+#pain-card-revenue {
+  transform: translateX(100vw);
 }
 
 .pain-card:hover {
@@ -709,10 +713,9 @@ body.nav-scrolled .nav-pill {
   border-radius: 12px;
   padding: 64px 56px;
   background: rgba(196,132,90,0.03);
-}
-
-.offer-box.animate-ready {
-  transform: scale(0.97);
+  transform: translateY(80px) scale(0.97);
+  opacity: 0;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s ease;
 }
 
 .offer-headline {
@@ -820,8 +823,10 @@ body.nav-scrolled .nav-pill {
 }
 
 .process-steps {
+  position: relative;
   display: flex;
   align-items: flex-start;
+  gap: 32px;
   margin-top: 56px;
 }
 
@@ -834,28 +839,36 @@ body.nav-scrolled .nav-pill {
   transform: translateX(-30px);
 }
 
-.process-connector {
-  flex: 0 0 80px;
-  height: 2px;
-  margin-top: 27px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, rgba(196,132,90,0.15), rgba(196,132,90,0.5), rgba(196,132,90,0.15));
-  background-size: 200% 100%;
-  animation: flow-line 2.5s linear infinite;
+.process-connector-svg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.process-connector-1 { animation-delay: 0s; }
-.process-connector-2 { animation-delay: 0.8s; }
-.process-connector-3 { animation-delay: 1.6s; }
-
-@keyframes flow-line {
-  0% { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+.connector-track {
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
 }
 
-@keyframes flow-line-vertical {
-  0% { background-position: 0 100%; }
-  100% { background-position: 0 -100%; }
+.connector-flow {
+  stroke: url(#flow-gradient);
+  stroke-width: 2;
+  stroke-dasharray: 80 400;
+  stroke-dashoffset: 400;
+  animation: flow-dash 2.5s linear infinite;
+  animation-play-state: paused;
+}
+
+.process-connector-svg.is-visible .connector-flow {
+  animation-play-state: running;
+}
+
+@keyframes flow-dash {
+  0%   { stroke-dashoffset: 400; }
+  100% { stroke-dashoffset: -400; }
 }
 
 .process-step-icon {
@@ -927,47 +940,76 @@ body.nav-scrolled .nav-pill {
   margin-top: 16px;
 }
 
-.principle-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
+.approach-rows {
   margin-top: 56px;
 }
 
-.principle-card {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 8px;
-  padding: 36px;
-  transition: border-color 0.2s, opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+.approach-row {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+  padding: 48px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  opacity: 0;
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
 }
 
-.principle-card:hover {
-  border-color: rgba(196,132,90,0.25);
+.approach-row-last {
+  border-bottom: none;
 }
 
-.principle-number {
-  display: block;
+.approach-row-1,
+.approach-row-3 {
+  transform: translateX(-40px);
+}
+
+.approach-row-2 {
+  transform: translateX(40px);
+}
+
+.approach-row.is-in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.approach-text {
+  flex: 1;
+}
+
+.approach-title {
   font-family: Georgia, serif;
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
-  color: rgba(196,132,90,0.12);
-  line-height: 1;
-}
-
-.principle-title {
-  font-family: Georgia, serif;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   color: var(--accent);
   font-weight: normal;
-  margin-top: 16px;
 }
 
-.principle-body {
+.approach-body {
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: var(--accent-dim);
-  line-height: 1.75;
+  line-height: 1.8;
   margin-top: 10px;
+}
+
+.approach-number-wrap {
+  flex-shrink: 0;
+}
+
+.approach-number {
+  display: block;
+  font-family: Georgia, serif;
+  font-size: clamp(5rem, 10vw, 8rem);
+  color: rgba(196,132,90,0.08);
+  line-height: 1;
+  font-weight: normal;
+}
+
+.approach-number-right .approach-number {
+  text-align: right;
+}
+
+.approach-number-left .approach-number {
+  text-align: left;
 }
 
 /* ---------- WHO THIS IS FOR ---------- */
@@ -1891,21 +1933,11 @@ body.nav-scrolled .nav-pill {
 
   .process-steps {
     flex-direction: column;
-    gap: 0;
+    gap: 32px;
   }
 
-  .process-connector {
-    flex: none;
-    width: 2px;
-    height: 40px;
-    margin: 8px auto;
-    background: linear-gradient(180deg, rgba(196,132,90,0.15), rgba(196,132,90,0.5), rgba(196,132,90,0.15));
-    background-size: 100% 200%;
-    animation-name: flow-line-vertical;
-  }
-
-  .principle-grid {
-    grid-template-columns: 1fr;
+  .process-connector-svg {
+    display: none;
   }
 
   .fit-columns {
@@ -1947,6 +1979,25 @@ body.nav-scrolled .nav-pill {
 
   .footer-bottom {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .approach-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .approach-number-wrap {
+    order: -1;
+  }
+
+  .approach-number,
+  .approach-number-right .approach-number,
+  .approach-number-left .approach-number {
+    font-size: 5rem;
+    text-align: left;
   }
 }
 

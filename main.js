@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavScroll();
   initNavPill();
   initContactForm();
+  initProblemCardsScroll();
+  initOfferBoxScroll();
+  initProcessConnector();
+  initApproachRowsScroll();
 });
 
 /* ---------- Arc preloader ---------- */
@@ -371,4 +375,165 @@ function initContactForm() {
       });
     });
   });
+}
+
+/* ---------- Problem cards: reversible slide in/out ---------- */
+
+function initProblemCardsScroll() {
+  const section = document.getElementById('problem-section');
+  const timeCard = document.getElementById('pain-card-time');
+  const revenueCard = document.getElementById('pain-card-revenue');
+  if (!section || !timeCard || !revenueCard) return;
+
+  const IN_TRANSITION = 'border-color 0.2s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease';
+  const OUT_TRANSITION = 'border-color 0.2s, transform 0.6s ease-in, opacity 0.4s ease-in';
+
+  function setIn() {
+    timeCard.style.transition = IN_TRANSITION;
+    revenueCard.style.transition = IN_TRANSITION;
+    timeCard.style.transform = 'translateX(0)';
+    timeCard.style.opacity = '1';
+    revenueCard.style.transform = 'translateX(0)';
+    revenueCard.style.opacity = '1';
+  }
+
+  function setOut() {
+    timeCard.style.transition = OUT_TRANSITION;
+    revenueCard.style.transition = OUT_TRANSITION;
+    timeCard.style.transform = 'translateX(-100vw)';
+    timeCard.style.opacity = '0';
+    revenueCard.style.transform = 'translateX(100vw)';
+    revenueCard.style.opacity = '0';
+  }
+
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    const rect = section.getBoundingClientRect();
+    const windowH = window.innerHeight;
+
+    if (rect.top > windowH) {
+      setOut();
+    } else if (rect.bottom < windowH * 0.2) {
+      setOut();
+    } else if (rect.top < windowH * 0.7 && rect.bottom > 0) {
+      setIn();
+    }
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+}
+
+/* ---------- Offer box: slides up into place ---------- */
+
+function initOfferBoxScroll() {
+  const section = document.getElementById('offer-section');
+  const box = document.getElementById('offer-box');
+  if (!section || !box) return;
+
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    const rect = section.getBoundingClientRect();
+    const windowH = window.innerHeight;
+
+    if (rect.top < windowH * 0.75) {
+      box.style.transform = 'translateY(0) scale(1)';
+      box.style.opacity = '1';
+    } else {
+      box.style.transform = 'translateY(80px) scale(0.97)';
+      box.style.opacity = '0';
+    }
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+}
+
+/* ---------- Process connector: single flowing SVG line ---------- */
+
+function initProcessConnector() {
+  const section = document.getElementById('process-section');
+  const stepsRow = document.querySelector('.process-steps');
+  const iconBox = stepsRow ? stepsRow.querySelector('.process-step-icon') : null;
+  const svg = document.querySelector('.process-connector-svg');
+  if (!section || !stepsRow || !iconBox || !svg) return;
+
+  function positionSvg() {
+    svg.style.top = iconBox.offsetTop + 'px';
+    svg.style.height = iconBox.offsetHeight + 'px';
+  }
+
+  positionSvg();
+  window.addEventListener('resize', positionSvg);
+
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    svg.classList.add('is-visible');
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        positionSvg();
+        svg.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  observer.observe(section);
+}
+
+/* ---------- Approach rows: reversible alternating slide-in ---------- */
+
+function initApproachRowsScroll() {
+  const rows = Array.from(document.querySelectorAll('.approach-row'));
+  if (!rows.length) return;
+
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    const windowH = window.innerHeight;
+
+    rows.forEach((row) => {
+      const rect = row.getBoundingClientRect();
+      if (rect.top < windowH * 0.85 && rect.bottom > 0) {
+        row.classList.add('is-in');
+      } else {
+        row.classList.remove('is-in');
+      }
+    });
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
 }

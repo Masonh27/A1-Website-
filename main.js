@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavScroll();
   initNavPill();
   initContactForm();
+  initProcessLine();
   initScrollDrivenAnimations();
   initOrbitCanvas();
 });
@@ -368,12 +369,6 @@ function initScrollDrivenAnimations() {
   const offerTitleArea = sequence ? sequence.querySelector('.offer-title-area') : null;
   const sequenceHeader = sequence ? sequence.querySelector('.sequence-header') : null;
 
-  // --- Process section: dotted connector line ---
-  const processSection = document.getElementById('process-section');
-  const stepsRow = processSection ? processSection.querySelector('.process-steps-row') : null;
-  const connectorDots = processSection ? processSection.querySelector('.connector-dots') : null;
-  const connectorPulse = processSection ? processSection.querySelector('.connector-pulse') : null;
-
   // --- Who This Is For: stays a standalone reveal, not part of any sequence ---
   const fitSection = document.getElementById('fit-section');
 
@@ -383,36 +378,6 @@ function initScrollDrivenAnimations() {
   const ctaPanel = faqCtaSequence ? faqCtaSequence.querySelector('.cta-panel') : null;
   const faqItems = faqPanel ? Array.from(faqPanel.querySelectorAll('.faq-item')) : [];
   const finalCtaBtn = ctaPanel ? ctaPanel.querySelector('.final-cta-btn') : null;
-
-  function positionConnector() {
-    if (!processSection || !stepsRow) return;
-    const allBoxes = stepsRow.querySelectorAll('.step-icon-box');
-    if (!allBoxes.length) return;
-    const svgContainer = processSection.querySelector('.process-connector');
-    if (!svgContainer) return;
-
-    // .process-step carries a `transform` (its scroll-driven entrance
-    // offset), and a transformed ancestor becomes the offsetParent for
-    // its descendants — which would make every icon box's offsetLeft
-    // relative to its own step instead of the shared row. Neutralize
-    // the transforms just long enough to measure true layout position.
-    const steps = stepsRow.querySelectorAll('.process-step');
-    const savedTransforms = Array.from(steps).map((step) => step.style.transform);
-    steps.forEach((step) => { step.style.transform = 'none'; });
-
-    const first = allBoxes[0];
-    const last = allBoxes[allBoxes.length - 1];
-    const iconCenter = first.offsetTop + first.offsetHeight / 2;
-    const left = first.offsetLeft + first.offsetWidth / 2;
-    const right = last.offsetLeft + last.offsetWidth / 2;
-
-    steps.forEach((step, i) => { step.style.transform = savedTransforms[i]; });
-
-    svgContainer.style.left = left + 'px';
-    svgContainer.style.width = (right - left) + 'px';
-    svgContainer.style.top = iconCenter + 'px';
-    svgContainer.style.height = '2px';
-  }
 
   function runProblemOfferSequence() {
     if (!sequence || !timeCard || !revenueCard || !offerLayer || !offerCard || !offerTitleArea || !sequenceHeader) return;
@@ -453,32 +418,6 @@ function initScrollDrivenAnimations() {
     offerCard.style.transform = 'rotateX(' + offerRotateX + 'deg) translateY(' + offerY + 'px) scale(' + offerScale + ')';
     offerCard.style.opacity = String(offerOpacity);
     offerLayer.style.opacity = String(offerOpacity);
-  }
-
-  function runProcessLine() {
-    if (!processSection || !stepsRow || !connectorDots || !connectorPulse) return;
-
-    const rect = processSection.getBoundingClientRect();
-    const windowH = window.innerHeight;
-
-    // Draw progress: 0 when section enters, 1 when fully scrolled into view.
-    const drawProgress = Math.max(0, Math.min(1, (windowH * 0.85 - rect.top) / (windowH * 0.55)));
-    connectorDots.style.transform = 'scaleX(' + drawProgress + ')';
-
-    if (drawProgress > 0.3) {
-      connectorPulse.style.animationPlayState = 'running';
-    } else {
-      connectorPulse.style.animationPlayState = 'paused';
-    }
-
-    // Steps animate in left to right, based on draw progress.
-    const steps = stepsRow.querySelectorAll('.process-step');
-    steps.forEach((step, i) => {
-      const stepThreshold = i / (steps.length - 1); // 0, 0.33, 0.66, 1
-      const stepProgress = Math.max(0, Math.min(1, (drawProgress - stepThreshold * 0.5) / 0.3));
-      step.style.opacity = String(stepProgress);
-      step.style.transform = 'translateX(' + (1 - stepProgress) * -40 + 'px)'; // from the left
-    });
   }
 
   function runFitSection() {
@@ -525,7 +464,7 @@ function initScrollDrivenAnimations() {
 
   function runAllScrollAnimations() {
     runProblemOfferSequence();
-    runProcessLine();
+    if (window._processScrollFn) window._processScrollFn();
     runFitSection();
     runFaqCtaSequence();
   }
@@ -543,12 +482,154 @@ function initScrollDrivenAnimations() {
   }, { passive: true });
 
   window.addEventListener('resize', () => {
-    positionConnector();
     runAllScrollAnimations();
   });
 
-  positionConnector();
   runAllScrollAnimations();
+}
+
+/* ---------- Process connector line ---------- */
+
+function initProcessLine() {
+  const processSection = document.getElementById('process-section');
+  if (!processSection) return;
+
+  const stepsRow = processSection.querySelector('.process-steps-row');
+  const canvas = processSection.querySelector('.process-line-canvas');
+  if (!stepsRow || !canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let drawProgress = 0; // 0 to 1, controlled by scroll
+  let dotPosition = 0; // 0 to 1, the slow moving dot
+
+  function resizeCanvas() {
+    canvas.width = stepsRow.offsetWidth;
+    canvas.height = 56;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function getIconCenters() {
+    // .process-step is position:relative (for z-index stacking above the
+    // canvas) and carries a scroll-driven transform, either of which makes
+    // it a valid offsetParent for its children — so offsetLeft math breaks.
+    // getBoundingClientRect() sidesteps that entirely: viewport-relative
+    // coordinates, converted to canvas-local by subtracting the row's rect.
+    const steps = stepsRow.querySelectorAll('.process-step');
+    const rowRect = stepsRow.getBoundingClientRect();
+
+    const centers = [];
+    steps.forEach((step) => {
+      const iconBox = step.querySelector('.step-icon-box');
+      if (iconBox) {
+        const boxRect = iconBox.getBoundingClientRect();
+        centers.push(boxRect.left - rowRect.left + boxRect.width / 2);
+      }
+    });
+
+    return centers;
+  }
+
+  function renderLine() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const centers = getIconCenters();
+    if (centers.length < 2) return;
+
+    const lineY = 28; // vertical center of icon boxes
+    const startX = centers[0];
+    const endX = centers[centers.length - 1];
+    const totalWidth = endX - startX;
+
+    // Draw the static dashed track (always visible once section in view, fades in with drawProgress)
+    if (drawProgress > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, drawProgress * 2) * 0.25;
+      ctx.setLineDash([5, 6]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, lineY);
+      ctx.lineTo(endX, lineY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw the scroll-driven copper line (draws left to right as user scrolls in)
+    if (drawProgress > 0) {
+      const drawnEndX = startX + totalWidth * drawProgress;
+      ctx.save();
+      ctx.setLineDash([5, 6]);
+      ctx.strokeStyle = 'rgba(196,132,90,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, lineY);
+      ctx.lineTo(drawnEndX, lineY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw the slow moving glowing dot (only when line is mostly drawn)
+    if (drawProgress > 0.6) {
+      const dotX = startX + totalWidth * dotPosition;
+
+      // Glow halo
+      const grad = ctx.createRadialGradient(dotX, lineY, 0, dotX, lineY, 12);
+      grad.addColorStop(0, 'rgba(196,132,90,0.7)');
+      grad.addColorStop(0.5, 'rgba(196,132,90,0.2)');
+      grad.addColorStop(1, 'rgba(196,132,90,0)');
+      ctx.beginPath();
+      ctx.arc(dotX, lineY, 12, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Main dot
+      ctx.beginPath();
+      ctx.arc(dotX, lineY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#c4845a';
+      ctx.fill();
+    }
+  }
+
+  // Animate the dot slowly from left to right, then reset
+  let lastTime = 0;
+  function animateDot(time) {
+    const delta = time - lastTime;
+    lastTime = time;
+
+    if (drawProgress > 0.6) {
+      // 4 seconds to travel full width — slow and visible
+      dotPosition += delta / 4000;
+      if (dotPosition > 1) dotPosition = 0;
+    }
+
+    renderLine();
+    requestAnimationFrame(animateDot);
+  }
+  requestAnimationFrame(animateDot);
+
+  // Scroll-driven draw progress
+  function updateProcessScroll() {
+    const rect = processSection.getBoundingClientRect();
+    const windowH = window.innerHeight;
+    drawProgress = Math.max(0, Math.min(1,
+      (windowH * 0.85 - rect.top) / (windowH * 0.55)
+    ));
+
+    // Also control step opacity left to right
+    const steps = stepsRow.querySelectorAll('.process-step');
+    steps.forEach((step, i) => {
+      const threshold = i / steps.length * 0.7;
+      const stepP = Math.max(0, Math.min(1, (drawProgress - threshold) / 0.25));
+      step.style.opacity = stepP;
+      step.style.transform = `translateX(${(1 - stepP) * -30}px)`;
+    });
+  }
+
+  // Add to the global scroll animation system
+  window._processScrollFn = updateProcessScroll;
 }
 
 /* ---------- Offer card orbiting glow ---------- */

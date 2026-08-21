@@ -71,7 +71,17 @@ function initArcPreloader(onDone) {
   setPath(110);
 
   function showWord(i) {
-    greetingEl.textContent = GREETINGS[i];
+    const word = GREETINGS[i];
+    const isLast = i === GREETINGS.length - 1;
+
+    if (isLast) {
+      greetingEl.innerHTML = `<span style="color: #c4845a">${word}</span>`;
+    } else {
+      const text = word.slice(0, -1);
+      const period = word.slice(-1);
+      greetingEl.innerHTML = `<span style="color: var(--accent)">${text}</span><span style="color: #c4845a">${period}</span>`;
+    }
+
     greetingEl.classList.remove('is-leaving');
     void greetingEl.offsetWidth; // force reflow so the transition re-triggers
     greetingEl.classList.add('is-visible');

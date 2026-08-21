@@ -605,28 +605,30 @@ body.nav-scrolled .nav-pill {
   margin: 0 auto;
 }
 
-/* ---------- PROBLEM AGITATION ---------- */
+/* ---------- PROBLEM + OFFER: SINGLE STICKY SEQUENCE ---------- */
 
-.problem-section {
+#problem-offer-sequence {
   position: relative;
-  min-height: 250vh;
+  height: 400vh;
 }
 
-.problem-sticky {
+.sequence-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  overflow: hidden;
-  padding: 0 24px;
+  padding: 80px 24px;
 }
 
-.problem-inner {
+.sequence-header {
+  text-align: left;
   max-width: 1100px;
-  margin: 0 auto;
   width: 100%;
+  margin-bottom: 48px;
 }
 
 .problem-headline {
@@ -638,11 +640,12 @@ body.nav-scrolled .nav-pill {
   margin-top: 16px;
 }
 
-.pain-grid {
+.sequence-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  margin-top: 56px;
+  max-width: 1100px;
+  width: 100%;
 }
 
 .pain-card {
@@ -650,16 +653,17 @@ body.nav-scrolled .nav-pill {
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 8px;
   padding: 40px;
+  will-change: transform;
 }
 
 .time-card {
-  transform: translateX(-100vw);
+  transform: translateX(-110vw);
   opacity: 0;
   transition: none;
 }
 
 .revenue-card {
-  transform: translateX(100vw);
+  transform: translateX(110vw);
   opacity: 0;
   transition: none;
 }
@@ -709,21 +713,21 @@ body.nav-scrolled .nav-pill {
 
 /* ---------- THE OFFER (FREE AUDIT) ---------- */
 
-.offer-section {
-  position: relative;
-  padding: 0;
-  opacity: 0;
-  transition: none;
-}
-
-.offer-scroll-container {
-  min-height: 160vh;
+.offer-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 120px 24px 80px;
-  position: relative;
+  justify-content: center;
+  padding: 80px 24px;
+  perspective: 1000px;
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: none;
 }
 
 .offer-title-area {
@@ -731,25 +735,23 @@ body.nav-scrolled .nav-pill {
   width: 100%;
   text-align: center;
   margin-bottom: 48px;
+  transform: translateY(72px);
+  opacity: 0;
   will-change: transform;
   transition: none;
 }
 
-.offer-card-wrapper {
-  perspective: 1000px;
-  width: 100%;
-  max-width: 860px;
-  will-change: transform;
-}
-
 .offer-card {
+  max-width: 860px;
+  width: 100%;
   border: 1px solid rgba(196,132,90,0.20);
   border-radius: 16px;
   padding: 64px 56px;
   background: rgba(196,132,90,0.03);
   will-change: transform;
   transform-origin: center top;
-  transform: rotateX(20deg) scale(1.05);
+  transform: rotateX(18deg) translateY(120px) scale(0.95);
+  opacity: 0;
   box-shadow:
     0 0 #0000004d,
     0 9px 20px #0000004a,
@@ -875,39 +877,54 @@ body.nav-scrolled .nav-pill {
   flex: 1;
   min-width: 0;
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-40px);
   transition: none;
 }
 
-.process-line-track,
-.process-line-fill {
+.process-connector {
   position: absolute;
-  top: 43px;
-  left: 28px;
-  right: 28px;
-  height: 2px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
+  overflow: visible;
 }
 
-.process-line-track {
-  background: rgba(255,255,255,0.06);
+.connector-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.process-line-fill {
-  background: linear-gradient(90deg,
-    rgba(196,132,90,0.2) 0%,
-    rgba(196,132,90,0.9) 50%,
-    rgba(196,132,90,0.2) 100%);
-  background-size: 200% 100%;
+.connector-track {
+  stroke: rgba(255,255,255,0.05);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+
+.connector-dots {
+  stroke: rgba(196,132,90,0.35);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+  stroke-dashoffset: 0;
   transform-origin: left center;
   transform: scaleX(0);
-  animation: line-flow 2s linear infinite;
+}
+
+.connector-pulse {
+  stroke: rgba(196,132,90,0.9);
+  stroke-width: 2;
+  stroke-dasharray: 40 9999;
+  stroke-dashoffset: 9999;
+  animation: pulse-flow 2.2s linear infinite;
   animation-play-state: paused;
 }
 
-@keyframes line-flow {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+@keyframes pulse-flow {
+  from { stroke-dashoffset: 9999; }
+  to   { stroke-dashoffset: -9999; }
 }
 
 .process-step-icon {
@@ -1154,22 +1171,55 @@ body.nav-scrolled .nav-pill {
 
 /* ---------- FAQ ---------- */
 
-.faq-section {
+#faq-cta-sequence {
   position: relative;
-  min-height: 100vh;
-  opacity: 0;
-  transform: translateY(40px);
-  transition: none;
+  height: 300vh;
 }
 
-.faq-sticky {
+.faq-cta-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.faq-panel,
+.cta-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 100px 24px;
+  padding: 80px 24px;
+  will-change: transform;
+}
+
+.faq-panel {
+  transform: translateY(40px);
+  opacity: 0;
+  transition: none;
+}
+
+.cta-panel {
+  transform: translateX(100vw);
+  opacity: 0;
+  transition: none;
+  text-align: center;
+}
+
+.cta-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(196,132,90,0.06) 0%, transparent 70%);
 }
 
 .faq-inner {
@@ -1241,33 +1291,6 @@ body.nav-scrolled .nav-pill {
 }
 
 /* ---------- FINAL CTA ---------- */
-
-.final-cta {
-  position: relative;
-  min-height: 100vh;
-  opacity: 0;
-  transform: translateY(40px);
-  transition: none;
-}
-
-.final-cta-sticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 140px 24px;
-  text-align: center;
-}
-
-.final-cta-sticky::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(196,132,90,0.06) 0%, transparent 70%);
-}
 
 .final-cta-inner {
   position: relative;
@@ -2020,8 +2043,43 @@ body.nav-scrolled .nav-pill {
     pointer-events: auto !important;
   }
 
-  .pain-grid {
+  .sequence-sticky {
+    padding: 32px 20px;
+  }
+
+  .sequence-header {
+    margin-bottom: 20px;
+  }
+
+  .problem-headline {
+    font-size: 1.35rem;
+    line-height: 1.3;
+    margin-top: 8px;
+  }
+
+  .sequence-cards {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pain-card {
+    padding: 18px;
+  }
+
+  .pain-title {
+    font-size: 0.95rem;
+    margin-top: 10px;
+    line-height: 1.3;
+  }
+
+  .pain-body {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    margin-top: 8px;
+  }
+
+  .pain-tag {
+    margin-top: 12px;
   }
 
   .offer-card {
@@ -2033,8 +2091,7 @@ body.nav-scrolled .nav-pill {
     gap: 32px;
   }
 
-  .process-line-track,
-  .process-line-fill {
+  .process-connector {
     display: none;
   }
 

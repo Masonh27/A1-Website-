@@ -358,121 +358,128 @@ function getScrollProgress(element, enterAt = 0.85, exitAt = 0.1) {
 }
 
 function initScrollDrivenAnimations() {
-  const problemSection = document.getElementById('problem-section');
-  const timeCard = problemSection ? problemSection.querySelector('.time-card') : null;
-  const revenueCard = problemSection ? problemSection.querySelector('.revenue-card') : null;
+  // --- Problem cards + Free Audit: one continuous sticky sequence ---
+  const sequence = document.getElementById('problem-offer-sequence');
+  const timeCard = sequence ? sequence.querySelector('.time-card') : null;
+  const revenueCard = sequence ? sequence.querySelector('.revenue-card') : null;
+  const offerLayer = sequence ? sequence.querySelector('.offer-layer') : null;
+  const offerCard = sequence ? sequence.querySelector('.offer-card') : null;
+  const offerTitleArea = sequence ? sequence.querySelector('.offer-title-area') : null;
+  const sequenceHeader = sequence ? sequence.querySelector('.sequence-header') : null;
 
-  const offerSection = document.getElementById('offer-section');
-  const offerTitleArea = offerSection ? offerSection.querySelector('.offer-title-area') : null;
-  const offerCard = offerSection ? offerSection.querySelector('.offer-card') : null;
-
+  // --- Process section: dotted connector line ---
   const processSection = document.getElementById('process-section');
-  const lineTrack = processSection ? processSection.querySelector('.process-line-track') : null;
-  const lineFill = processSection ? processSection.querySelector('.process-line-fill') : null;
-  const processSteps = processSection ? Array.from(processSection.querySelectorAll('.process-step')) : [];
+  const stepsRow = processSection ? processSection.querySelector('.process-steps-row') : null;
+  const connectorDots = processSection ? processSection.querySelector('.connector-dots') : null;
+  const connectorPulse = processSection ? processSection.querySelector('.connector-pulse') : null;
 
+  // --- Approach rows (Our Approach section) ---
   const approachRows = Array.from(document.querySelectorAll('.approach-row'));
 
+  // --- Who This Is For: stays a standalone reveal, not part of any sequence ---
   const fitSection = document.getElementById('fit-section');
-  const faqSection = document.getElementById('faq-section');
-  const finalCta = document.getElementById('final-cta');
-  const faqItems = faqSection ? Array.from(faqSection.querySelectorAll('.faq-item')) : [];
-  const finalCtaBtn = finalCta ? finalCta.querySelector('.final-cta-btn') : null;
 
-  function positionProcessLine() {
-    if (!processSection || !lineTrack || !lineFill) return;
-    const firstIconBox = processSection.querySelector('.process-step-icon');
-    if (!firstIconBox) return;
-    const lineTop = firstIconBox.offsetTop + firstIconBox.offsetHeight / 2;
-    lineTrack.style.top = lineTop + 'px';
-    lineFill.style.top = lineTop + 'px';
+  // --- FAQ + Final CTA: slide sequence ---
+  const faqCtaSequence = document.getElementById('faq-cta-sequence');
+  const faqPanel = faqCtaSequence ? faqCtaSequence.querySelector('.faq-panel') : null;
+  const ctaPanel = faqCtaSequence ? faqCtaSequence.querySelector('.cta-panel') : null;
+  const faqItems = faqPanel ? Array.from(faqPanel.querySelectorAll('.faq-item')) : [];
+  const finalCtaBtn = ctaPanel ? ctaPanel.querySelector('.final-cta-btn') : null;
+
+  function positionConnector() {
+    if (!processSection || !stepsRow) return;
+    const allBoxes = stepsRow.querySelectorAll('.step-icon-box');
+    if (!allBoxes.length) return;
+    const svgContainer = processSection.querySelector('.process-connector');
+    if (!svgContainer) return;
+
+    // .process-step carries a `transform` (its scroll-driven entrance
+    // offset), and a transformed ancestor becomes the offsetParent for
+    // its descendants — which would make every icon box's offsetLeft
+    // relative to its own step instead of the shared row. Neutralize
+    // the transforms just long enough to measure true layout position.
+    const steps = stepsRow.querySelectorAll('.process-step');
+    const savedTransforms = Array.from(steps).map((step) => step.style.transform);
+    steps.forEach((step) => { step.style.transform = 'none'; });
+
+    const first = allBoxes[0];
+    const last = allBoxes[allBoxes.length - 1];
+    const iconCenter = first.offsetTop + first.offsetHeight / 2;
+    const left = first.offsetLeft + first.offsetWidth / 2;
+    const right = last.offsetLeft + last.offsetWidth / 2;
+
+    steps.forEach((step, i) => { step.style.transform = savedTransforms[i]; });
+
+    svgContainer.style.left = left + 'px';
+    svgContainer.style.width = (right - left) + 'px';
+    svgContainer.style.top = iconCenter + 'px';
+    svgContainer.style.height = '2px';
   }
 
-  function runProblemCards() {
-    if (!problemSection || !timeCard || !revenueCard) return;
+  function runProblemOfferSequence() {
+    if (!sequence || !timeCard || !revenueCard || !offerLayer || !offerCard || !offerTitleArea || !sequenceHeader) return;
 
-    const rect = problemSection.getBoundingClientRect();
-    const sectionScrolled = -rect.top;
-    const sectionHeight = problemSection.offsetHeight - window.innerHeight;
-    const progress = Math.max(0, Math.min(1, sectionScrolled / Math.max(sectionHeight, 1)));
+    const rect = sequence.getBoundingClientRect();
+    const scrolled = -rect.top;
+    const totalHeight = sequence.offsetHeight - window.innerHeight;
+    const progress = Math.max(0, Math.min(1, scrolled / Math.max(totalHeight, 1)));
 
-    // Phase 1 (0 → 0.4): cards slide in from the sides.
-    const slideInProgress = Math.max(0, Math.min(1, progress / 0.4));
-    const timeX = (1 - slideInProgress) * -100;
-    const revenueX = (1 - slideInProgress) * 100;
+    // Phase 1 (0 → 0.25): cards slide IN from sides.
+    const slideInP = Math.max(0, Math.min(1, progress / 0.25));
+    // Phase 2 (0.25 → 0.5): cards HOLD, fully visible.
+    // Phase 3 (0.5 → 0.75): cards slide OUT + offer rises up simultaneously.
+    const slideOutP = Math.max(0, Math.min(1, (progress - 0.5) / 0.25));
+    // Phase 4 (0.75 → 1.0): offer holds, fully visible.
 
-    // Phase 2 (0.6 → 1.0): cards continue sliding out the far side.
-    const slideOutProgress = Math.max(0, Math.min(1, (progress - 0.6) / 0.4));
-    const timeXFinal = timeX - slideOutProgress * 100;
-    const revenueXFinal = revenueX + slideOutProgress * 100;
+    const timeX = (1 - slideInP) * -110 - slideOutP * 110;
+    const revenueX = (1 - slideInP) * 110 + slideOutP * 110;
+    const cardsOpacity = slideInP - slideOutP;
 
-    timeCard.style.transform = 'translateX(' + timeXFinal + 'vw)';
-    revenueCard.style.transform = 'translateX(' + revenueXFinal + 'vw)';
+    timeCard.style.transform = 'translateX(' + timeX + 'vw)';
+    timeCard.style.opacity = String(Math.max(0, cardsOpacity));
+    revenueCard.style.transform = 'translateX(' + revenueX + 'vw)';
+    revenueCard.style.opacity = String(Math.max(0, cardsOpacity));
 
-    const opacity = progress < 0.4 ? slideInProgress : progress > 0.6 ? 1 - slideOutProgress : 1;
-    timeCard.style.opacity = String(opacity);
-    revenueCard.style.opacity = String(opacity);
-  }
+    // Header fades out as the offer rises.
+    sequenceHeader.style.opacity = String(Math.max(0, 1 - slideOutP * 2));
 
-  function runOfferCard() {
-    if (!offerSection || !offerTitleArea || !offerCard) return;
+    // Offer layer: rises up from below, 3D tilt flattens.
+    const offerRise = slideOutP;
+    const offerY = (1 - offerRise) * 120;
+    const offerRotateX = (1 - offerRise) * 18;
+    const offerScale = 0.95 + offerRise * 0.05;
+    const offerOpacity = slideOutP;
 
-    const offerRect = offerSection.getBoundingClientRect();
-    const offerScrolled = window.scrollY - offerSection.offsetTop;
-    const offerHeight = offerSection.offsetHeight - window.innerHeight;
-    const offerProgress = Math.max(0, Math.min(1, offerScrolled / Math.max(offerHeight, 1)));
-
-    const rotateX = 20 - offerProgress * 20;
-
-    const isMobile = window.innerWidth <= 768;
-    const scaleStart = isMobile ? 0.7 : 1.05;
-    const scaleEnd = isMobile ? 0.9 : 1.0;
-    const scale = scaleStart + offerProgress * (scaleEnd - scaleStart);
-
-    const titleTranslateY = offerProgress * -80;
-
-    if (offerRect.bottom > 0 && offerRect.top < window.innerHeight * 1.2) {
-      offerCard.style.transform = 'rotateX(' + rotateX + 'deg) scale(' + scale + ')';
-      offerTitleArea.style.transform = 'translateY(' + titleTranslateY + 'px)';
-
-      const fadeProgress = Math.max(0, Math.min(1, (window.innerHeight - offerRect.top) / (window.innerHeight * 0.5)));
-      offerSection.style.opacity = String(fadeProgress);
-    }
-
-    if (offerRect.bottom < -100) {
-      offerCard.style.transform = 'rotateX(0deg) scale(1)';
-      offerTitleArea.style.transform = 'translateY(-80px)';
-    }
-
-    if (offerRect.top > window.innerHeight * 1.2) {
-      offerCard.style.transform = 'rotateX(20deg) scale(1.05)';
-      offerTitleArea.style.transform = 'translateY(0px)';
-      offerSection.style.opacity = '0';
-    }
+    offerTitleArea.style.transform = 'translateY(' + offerY * 0.6 + 'px)';
+    offerTitleArea.style.opacity = String(offerOpacity);
+    offerCard.style.transform = 'rotateX(' + offerRotateX + 'deg) translateY(' + offerY + 'px) scale(' + offerScale + ')';
+    offerCard.style.opacity = String(offerOpacity);
+    offerLayer.style.opacity = String(offerOpacity);
   }
 
   function runProcessLine() {
-    if (!processSection || !lineFill) return;
+    if (!processSection || !stepsRow || !connectorDots || !connectorPulse) return;
 
     const rect = processSection.getBoundingClientRect();
     const windowH = window.innerHeight;
 
+    // Draw progress: 0 when section enters, 1 when fully scrolled into view.
     const drawProgress = Math.max(0, Math.min(1, (windowH * 0.85 - rect.top) / (windowH * 0.55)));
-    lineFill.style.transform = 'scaleX(' + drawProgress + ')';
+    connectorDots.style.transform = 'scaleX(' + drawProgress + ')';
 
-    if (drawProgress > 0.5) {
-      lineFill.style.animationPlayState = 'running';
+    if (drawProgress > 0.3) {
+      connectorPulse.style.animationPlayState = 'running';
     } else {
-      lineFill.style.animationPlayState = 'paused';
-      lineFill.style.backgroundPosition = '100% 0';
+      connectorPulse.style.animationPlayState = 'paused';
     }
 
-    processSteps.forEach((step, i) => {
-      const stepRect = step.getBoundingClientRect();
-      const enterAt = 0.85 - i * 0.05; // slight per-step cascade purely from scroll position
-      const p = Math.max(0, Math.min(1, (windowH * enterAt - stepRect.top) / (windowH * 0.4)));
-      step.style.opacity = String(p);
-      step.style.transform = 'translateX(' + (1 - p) * -30 + 'px)';
+    // Steps animate in left to right, based on draw progress.
+    const steps = stepsRow.querySelectorAll('.process-step');
+    steps.forEach((step, i) => {
+      const stepThreshold = i / (steps.length - 1); // 0, 0.33, 0.66, 1
+      const stepProgress = Math.max(0, Math.min(1, (drawProgress - stepThreshold * 0.5) / 0.3));
+      step.style.opacity = String(stepProgress);
+      step.style.transform = 'translateX(' + (1 - stepProgress) * -40 + 'px)'; // from the left
     });
   }
 
@@ -488,35 +495,54 @@ function initScrollDrivenAnimations() {
     });
   }
 
-  function runBottomSections() {
-    [fitSection, faqSection, finalCta].forEach((section) => {
-      if (!section) return;
-      const progress = getScrollProgress(section);
-      section.style.opacity = String(progress);
-      section.style.transform = 'translateY(' + (1 - progress) * 40 + 'px)';
-    });
+  function runFitSection() {
+    if (!fitSection) return;
+    const progress = getScrollProgress(fitSection);
+    fitSection.style.opacity = String(progress);
+    fitSection.style.transform = 'translateY(' + (1 - progress) * 40 + 'px)';
+  }
 
-    if (faqSection && faqItems.length) {
-      const faqProgress = getScrollProgress(faqSection);
+  function runFaqCtaSequence() {
+    if (!faqCtaSequence || !faqPanel || !ctaPanel) return;
+
+    const rect = faqCtaSequence.getBoundingClientRect();
+    const scrolled = -rect.top;
+    const totalHeight = faqCtaSequence.offsetHeight - window.innerHeight;
+    const progress = Math.max(0, Math.min(1, scrolled / Math.max(totalHeight, 1)));
+
+    // Phase 1 (0 → 0.4): FAQ fades/slides in from below.
+    const faqInP = Math.max(0, Math.min(1, progress / 0.4));
+    // Phase 2 (0.5 → 1.0): CTA slides in from the right, FAQ slides out to the left.
+    const ctaInP = Math.max(0, Math.min(1, (progress - 0.5) / 0.5));
+
+    const faqX = -ctaInP * 100;
+    const faqOpacity = faqInP * (1 - ctaInP);
+    faqPanel.style.transform = 'translateX(' + faqX + 'vw) translateY(' + (1 - faqInP) * 40 + 'px)';
+    faqPanel.style.opacity = String(Math.max(0, faqOpacity));
+
+    const ctaX = (1 - ctaInP) * 100;
+    ctaPanel.style.transform = 'translateX(' + ctaX + 'vw)';
+    ctaPanel.style.opacity = String(ctaInP);
+
+    if (faqItems.length) {
       faqItems.forEach((item, i) => {
-        const itemVisible = faqProgress > i * 0.12;
+        const itemVisible = faqInP > i * 0.12;
         item.style.opacity = itemVisible ? '1' : '0';
         item.style.transform = itemVisible ? 'translateY(0)' : 'translateY(20px)';
       });
     }
 
-    if (finalCta && finalCtaBtn) {
-      const finalProgress = getScrollProgress(finalCta);
-      finalCtaBtn.classList.toggle('is-pulsing', finalProgress > 0.8);
+    if (finalCtaBtn) {
+      finalCtaBtn.classList.toggle('is-pulsing', ctaInP > 0.8);
     }
   }
 
   function runAllScrollAnimations() {
-    runProblemCards();
-    runOfferCard();
+    runProblemOfferSequence();
     runProcessLine();
     runApproachRows();
-    runBottomSections();
+    runFitSection();
+    runFaqCtaSequence();
   }
 
   let ticking = false;
@@ -532,10 +558,10 @@ function initScrollDrivenAnimations() {
   }, { passive: true });
 
   window.addEventListener('resize', () => {
-    positionProcessLine();
+    positionConnector();
     runAllScrollAnimations();
   });
 
-  positionProcessLine();
+  positionConnector();
   runAllScrollAnimations();
 }
